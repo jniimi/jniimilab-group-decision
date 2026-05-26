@@ -125,19 +125,18 @@ def render_group_voting(students: List[Dict], groups: List[Dict], votes: Dict, c
         st.write(f"**上位 {n} 人を、1番欲しい人から順に選んでください**")
 
         selections = []
-        remaining_students = student_names.copy()
 
         for i in range(n):
             label = f"{i+1}番目に欲しい学生"
-            default_idx = min(i, len(remaining_students)-1) if remaining_students else 0
+            # 毎回全員のリストを表示（除外しない）
+            default_idx = min(i, len(student_names) - 1)
             choice = st.selectbox(
                 label,
-                options=remaining_students if remaining_students else ["（候補なし）"],
-                key=f"group_rank_{i}"
+                options=student_names,
+                key=f"group_rank_{i}",
+                index=default_idx
             )
             selections.append(choice)
-            if choice in remaining_students:
-                remaining_students.remove(choice)
 
         submitted = st.form_submit_button("グループの希望を送信する", type="primary", use_container_width=True)
 
