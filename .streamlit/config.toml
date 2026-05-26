@@ -4,7 +4,7 @@ enableCORS = false
 enableXsrfProtection = false
 
 [theme]
-base = "light"
+base = "dark"
 primaryColor = "#1f77b4"
 
 [browser]
