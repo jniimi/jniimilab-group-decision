@@ -390,6 +390,7 @@ def main():
                     st.rerun()
                 else:
                     st.error("アクセスキーが違います")
+        render_footer()
         st.stop()
 
     # ========== 認証後メイン ==========
@@ -433,8 +434,13 @@ def main():
             render_group_voting(students, groups, votes, config)
 
     # フッター
+    render_footer()
+
+
+def render_footer():
     st.divider()
-    st.caption("© jniimi lab | グループ意思決定支援ツール（開発版）")
+    st.caption("©jniimilab | グループ意思決定支援ツール（開発版）")
+    st.caption("Proudly co-built with Grok & [jniimilab](https://jniimilab.ai)")
 
 
 if __name__ == "__main__":
