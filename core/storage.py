@@ -27,7 +27,8 @@ def save_json(path: Path, data: Any) -> None:
 
 def load_config() -> Dict:
     cfg = load_json(CONFIG_PATH, {
-        "user_key": "jniimi2026",
+        "student_key": "",                  # 2年生専用（空なら無効）
+        "group_key": "",                    # 3年生グループ専用（空なら無効）
         "admin_key": "admin-jniimi2026",
         "group_vote_n": 3,
         "student_weight": 0.6,
@@ -45,6 +46,8 @@ def load_config() -> Dict:
 
     cfg.setdefault("max_group_size", 4)
     cfg.setdefault("min_group_size", 2)
+    cfg.setdefault("student_key", "")
+    cfg.setdefault("group_key", "")
     return cfg
 
 

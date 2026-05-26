@@ -160,7 +160,6 @@ def render_group_voting(students: List[Dict], groups: List[Dict], votes: Dict, c
 
 def render_admin(students: List[Dict], groups: List[Dict], votes: Dict, config: Dict):
     st.subheader("管理者画面")
-    st.warning("この画面の情報は管理者限定です。学生・3年生には公開しないでください。", icon="🔒")
 
     # --- 設定変更 ---
     with st.expander("⚙️ マッチング設定（重み・N・定員）", expanded=True):
@@ -209,19 +208,22 @@ def render_admin(students: List[Dict], groups: List[Dict], votes: Dict, config: 
     with st.expander("🔑 アクセスキー管理", expanded=False):
         st.warning("ここでキーを変更すると、すぐに反映されます。変更後は新しいキーで再ログインが必要になります。", icon="⚠️")
 
-        current_user_key = config.get("user_key", "")
+        current_student_key = config.get("student_key", "")
+        current_group_key = config.get("group_key", "")
         current_admin_key = config.get("admin_key", "")
 
-        new_user_key = st.text_input("一般ユーザー用キー", value=current_user_key, type="password")
+        new_student_key = st.text_input("2年生専用キー", value=current_student_key, type="password")
+        new_group_key = st.text_input("3年生グループ専用キー", value=current_group_key, type="password")
         new_admin_key = st.text_input("管理者用キー", value=current_admin_key, type="password")
 
         if st.button("アクセスキーを更新", type="primary"):
-            if not new_user_key or not new_admin_key:
-                st.error("両方のキーを入力してください")
-            elif new_user_key == new_admin_key:
-                st.error("一般ユーザー用キーと管理者用キーは異なるものにしてください")
+            if not new_admin_key:
+                st.error("管理者用キーは必須です")
+            elif new_student_key and new_student_key == new_group_key:
+                st.error("2年生専用キーと3年生グループ専用キーは異なるものにしてください")
             else:
-                config["user_key"] = new_user_key
+                config["student_key"] = new_student_key
+                config["group_key"] = new_group_key
                 config["admin_key"] = new_admin_key
                 save_config(config)
                 st.success("アクセスキーを更新しました。次回から新しいキーを使用してください。")
@@ -362,76 +364,94 @@ def main():
     # ========== アクセスキー認証 ==========
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
-        st.session_state.is_admin = False
+        st.session_state.user_role = None  # "student", "group", "general", "admin"
 
     if not st.session_state.authenticated:
         st.markdown("---")
         with st.container(border=True):
             st.subheader("アクセスキー入力")
-            st.caption("一般ユーザー用キーと管理者用キーは異なります。")
+            st.caption("配布されたキーを入力してください。2年生専用キー、3年生グループ専用キー、管理者用キーのいずれかをお使いください。")
             key_input = st.text_input(
                 "アクセスキーを入力してください",
                 type="password",
-                placeholder="一般ユーザー用または管理者用キー"
+                placeholder="アクセスキー"
             )
             if st.button("入室する", type="primary"):
-                user_key = config.get("user_key", "")
+                student_key = config.get("student_key", "")
+                group_key = config.get("group_key", "")
                 admin_key = config.get("admin_key", "")
 
                 if key_input == admin_key:
                     st.session_state.authenticated = True
-                    st.session_state.is_admin = True
+                    st.session_state.user_role = "admin"
                     st.success("管理者として認証されました。管理画面を表示します。")
                     st.rerun()
-                elif key_input == user_key:
+
+                elif student_key and key_input == student_key:
                     st.session_state.authenticated = True
-                    st.session_state.is_admin = False
-                    st.success("認証に成功しました。")
+                    st.session_state.user_role = "student"
+                    st.success("2年生として認証されました。")
                     st.rerun()
+
+                elif group_key and key_input == group_key:
+                    st.session_state.authenticated = True
+                    st.session_state.user_role = "group"
+                    st.success("3年生グループとして認証されました。")
+                    st.rerun()
+
                 else:
                     st.error("アクセスキーが違います")
         render_footer()
         st.stop()
 
     # ========== 認証後メイン ==========
-    is_admin = st.session_state.get("is_admin", False)
+    role = st.session_state.get("user_role")
 
-    if is_admin:
+    if role == "admin":
         st.success("管理者モードで入室中", icon="🔐")
         st.caption("この画面は管理者限定です。一般ユーザーには一切表示されません。")
 
         if st.button("ログアウト（アクセスキー画面に戻る）", type="secondary"):
             st.session_state.authenticated = False
-            st.session_state.is_admin = False
+            st.session_state.user_role = None
             st.rerun()
 
         st.divider()
         render_admin(students, groups, votes, config)
 
-    else:
-        st.success("入室中", icon="🔓")
-        st.caption("2年生または3年生グループとして投票してください。管理者機能は利用できません。")
+    elif role == "student":
+        # 2年生専用キー → 自動で2年生投票画面のみ
+        st.success("2年生モードで入室中", icon="🧑‍🎓")
+        st.caption("2年生として投票してください。")
 
         if st.button("ログアウト（アクセスキー画面に戻る）", type="secondary"):
             st.session_state.authenticated = False
-            st.session_state.is_admin = False
+            st.session_state.user_role = None
             st.rerun()
 
         st.divider()
+        render_student_voting(students, groups, votes)
 
-        role = st.radio(
-            "あなたの役割を選んでください",
-            options=["2年生として投票", "3年生グループとして投票"],
-            horizontal=True,
-            key="role_selector_user"
-        )
+    elif role == "group":
+        # 3年生グループ専用キー → 自動で3年生投票画面のみ
+        st.success("3年生グループモードで入室中", icon="👥")
+        st.caption("あなたの研究グループとして投票してください。")
+
+        if st.button("ログアウト（アクセスキー画面に戻る）", type="secondary"):
+            st.session_state.authenticated = False
+            st.session_state.user_role = None
+            st.rerun()
 
         st.divider()
+        render_group_voting(students, groups, votes, config)
 
-        if role == "2年生として投票":
-            render_student_voting(students, groups, votes)
-        elif role == "3年生グループとして投票":
-            render_group_voting(students, groups, votes, config)
+    else:
+        # 不明なロール（通常は発生しない）
+        st.error("不明なアクセスキーです。管理者にお問い合わせください。")
+        if st.button("ログアウト（アクセスキー画面に戻る）", type="secondary"):
+            st.session_state.authenticated = False
+            st.session_state.user_role = None
+            st.rerun()
 
     # フッター
     render_footer()
