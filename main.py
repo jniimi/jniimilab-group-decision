@@ -298,6 +298,37 @@ def render_admin(students: List[Dict], groups: List[Dict], votes: Dict, config: 
                 score_rows.append(row)
             st.dataframe(pd.DataFrame(score_rows), use_container_width=True, hide_index=True)
 
+        with st.expander("学生別スコア内訳（重み分解）", expanded=True):
+            st.caption(
+                f"α = {config.get('student_weight', 0.4):.2f}（2年生側の重み）、"
+                f"1-α = {config.get('group_weight', 0.6):.2f}（3年生側の重み）"
+            )
+            st.caption("形式：2年生側スコア / 3年生側スコア / 最終スコア")
+
+            student_map = get_student_name_map(students)
+            group_map = get_group_name_map(groups)
+
+            # 割り当て結果を辞書化
+            assignment = {
+                row["学生ID"]: row["配属グループ"]
+                for _, row in result["assignment_df"].iterrows()
+            }
+
+            rows = []
+            for s in students:
+                sid = s["id"]
+                row = {"学生": student_map[sid]}
+                for g in groups:
+                    gid = g["id"]
+                    s_score = result.get("student_pref", {}).get(sid, {}).get(gid, 0.0)
+                    g_score = result.get("group_pref", {}).get(gid, {}).get(sid, 0.0)
+                    total = result["total_score"][sid].get(gid, 0.0)
+                    row[g["name"]] = f"{s_score:.0f} / {g_score:.0f} / {total:.2f}"
+                row["割り当て"] = assignment.get(sid, "未割当")
+                rows.append(row)
+
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
     # --- 名前リスト編集 ---
     st.markdown("### 名前リストの編集")
     with st.expander("グループ名を編集"):
