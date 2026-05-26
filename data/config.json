@@ -1,0 +1,9 @@
+{
+  "user_key": "access",
+  "admin_key": "jniimilab2026_admin",
+  "group_vote_n": 5,
+  "student_weight": 0.4,
+  "group_weight": 0.6,
+  "max_group_size": 3,
+  "min_group_size": 2
+}

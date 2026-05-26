@@ -1,0 +1,25 @@
+[project]
+name = "jniimilab-group-decision"
+version = "0.1.0"
+description = "ゼミ向け 2・3年生研究グループ マッチングシステム (Streamlit)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Junichiro Niimi", email = "jniimi@example.com" }
+]
+dependencies = [
+    "pandas>=2.3.3",
+    "streamlit>=1.57.0",
+    "watchdog>=6.0.0",
+]
+
+[tool.uv]
+managed = true
+
+[dependency-groups]
+dev = []
+
+[project.urls]
+Homepage = "https://github.com/jniimi/jniimilab-group-decision"
+Repository = "https://github.com/jniimi/jniimilab-group-decision"
